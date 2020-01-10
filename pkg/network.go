@@ -2,11 +2,22 @@ package pkg
 
 import (
 	"fmt"
-	"strings"
 	"os/exec"
+	"strings"
+
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 	"github.com/vishvananda/netlink"
 )
+
+type NetworkManager interface {
+	AddIP()
+	DelIP()
+	IsSet() (bool, error)
+	IsUsed() bool
+	IP() string
+	Link() string
+}
 
 // NetworkConfig for link
 type NetworkConfig struct {
@@ -52,26 +63,38 @@ func (nc *NetworkConfig) IsSet() (bool, error) {
 	return false, nil
 }
 
-func (nc *NetworkConfig) AddIP() error {
-	res, err := nc.IsSet()
-	if err != nil {
-		return errors.Wrap(err, "ip check in AddIP failed")
-
+func (nc *NetworkConfig) AddIP() {
+	if err := nc.addIP(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"ip":    nc.IP(),
+			"link":  nc.Link(),
+		}).Error("Could not set ip")
+	} else {
+		log.WithFields(log.Fields{
+			"ip":   nc.IP(),
+			"link": nc.Link(),
+		}).Info("Add IP success")
 	}
-
-	if res {
-		return nil
-	}
-
-	if err := netlink.AddrAdd(nc.link, nc.address); err != nil {
-		return errors.Wrap(err, "could not add ip")
-	}
-
-	return nil
 }
 
-func (nc *NetworkConfig) DelIP() error {
-	res , err := nc.IsSet()
+func (nc *NetworkConfig) DelIP() {
+	if err := nc.delIP(); err != nil {
+		log.WithFields(log.Fields{
+			"error": err,
+			"ip":    nc.IP(),
+			"link":  nc.Link(),
+		}).Error("Could not delete ip")
+	} else {
+		log.WithFields(log.Fields{
+			"ip":   nc.IP(),
+			"link": nc.Link(),
+		}).Info("Delete IP success")
+	}
+}
+
+func (nc *NetworkConfig) delIP() error {
+	res, err := nc.IsSet()
 	if err != nil {
 		return errors.Wrap(err, "ip check in DelIP failed")
 	}
@@ -99,9 +122,26 @@ func (nc *NetworkConfig) IsUsed() bool {
 	cmd := fmt.Sprintf("ping -w 1 -c 1 %s > /dev/null && echo true || echo false", nc.IP())
 	output, err := exec.Command("/bin/bash", "-c", cmd).Output()
 	out := strings.TrimSpace(string(output))
-	fmt.Println("ping output", out)
 	if err != nil || out == "false" {
 		return false
 	}
 	return true
+}
+
+func (nc *NetworkConfig) addIP() error {
+	res, err := nc.IsSet()
+	if err != nil {
+		return errors.Wrap(err, "ip check in AddIP failed")
+
+	}
+
+	if res {
+		return nil
+	}
+
+	if err := netlink.AddrAdd(nc.link, nc.address); err != nil {
+		return errors.Wrap(err, "could not add ip")
+	}
+
+	return nil
 }

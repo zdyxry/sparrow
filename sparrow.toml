@@ -1,0 +1,25 @@
+[raft]
+id = "install1"
+bind = "172.18.17.11:10000"
+
+    [[raft.peers]]
+    id = "install1"
+    addr = "172.18.17.11:10000"
+
+    [[raft.peers]]
+    id = "install2"
+    addr = "172.18.17.12:10000"
+
+    [[raft.peers]]
+    id = "install3"
+    addr = "172.18.17.13:10000"
+
+[network]
+vip = "172.18.17.14"
+interface = "port-storage"
+
+[ntp]
+mode = "internal"
+servers = [
+    "192.168.64.1"
+]
