@@ -58,7 +58,7 @@ func initConfig() {
 		viper.AddConfigPath(".")
 		viper.AddConfigPath("/etc/sparrow")
 
-		viper.SetConfigName("sparrow.toml")
+		viper.SetConfigName("sparrow")
 	}
 
 	viper.AutomaticEnv() // read in environment variables that match
