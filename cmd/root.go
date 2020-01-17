@@ -2,18 +2,20 @@ package cmd
 
 import (
 	"fmt"
+	"os"
+
 	"github.com/mitchellh/go-homedir"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
-	"github.com/zdyxry/Sparrow/pkg"
-	"os"
+
+	"github.com/zdyxry/sparrow/pkg"
 )
 
 // rootCmd represents the base command when called without any subcommands
 var (
 	rootCmd = &cobra.Command{
-		Use:   "Sparrow",
-		Short: "Sparrow command line",
+		Use:   "sparrow",
+		Short: "sparrow command line",
 		Run: func(cmd *cobra.Command, args []string) {
 			cmd.Help()
 		},
@@ -53,10 +55,10 @@ func initConfig() {
 			os.Exit(1)
 		}
 
-		// Search config in home directory with name ".Sparrow" (without extension).
+		// Search config in home directory with name ".sparrow" (without extension).
 		viper.AddConfigPath(home)
 		viper.AddConfigPath(".")
-		viper.AddConfigPath("/etc/sparrow")
+		viper.AddConfigPath("/etc/sparrow/")
 
 		viper.SetConfigName("sparrow")
 	}

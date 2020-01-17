@@ -2,9 +2,14 @@ package pkg
 
 import (
 	"github.com/hashicorp/raft"
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"net"
 	"time"
+)
+
+var (
+	leaderIP    string
+	curLeaderIP string
 )
 
 type Manager struct {
@@ -78,18 +83,11 @@ func (manager *Manager) Start() error {
 	}
 
 	// Create network raft instance
-	networkRaftServer, err := raft.NewRaft(config, manager.fsm, logStore, stableStore, snapshots, transport)
+	raftServer, err := raft.NewRaft(config, manager.fsm, logStore, stableStore, snapshots, transport)
 	if err != nil {
 		return err
 	}
-	manager.networkStart(networkRaftServer)
-
-	// Create NTP raft instance
-	ntpRaftServer, err := raft.NewRaft(config, manager.fsm, logStore, stableStore, snapshots, transport)
-	if err != nil {
-		return err
-	}
-	manager.ntpStart(ntpRaftServer)
+	manager.Action(raftServer)
 
 	log.Info("Started")
 	return nil
@@ -99,13 +97,12 @@ func (manager *Manager) LeaderAddr(raftServer *raft.Raft) string {
 	return string(raftServer.Leader())
 }
 
-func (manager *Manager) networkStart(raftServer *raft.Raft) {
+func (manager *Manager) Action(raftServer *raft.Raft) {
 	ticker := time.NewTicker(time.Second)
 	isLeader := false
 
 	// Delete ip when first boot
 	networkManager := manager.networkManager
-	var leaderIP string
 	networkManager.DelIP()
 	go func() {
 		for {
@@ -114,29 +111,13 @@ func (manager *Manager) networkStart(raftServer *raft.Raft) {
 				if leader {
 					isLeader = true
 					log.Info("Network leading")
-					networkManager.AddIP()
+					manager.leaderAction()
 				}
 			case <-ticker.C:
-				if isLeader {
-					result, err := manager.networkManager.IsSet()
-					if err != nil {
-						log.WithFields(log.Fields{
-							"error": err,
-							"ip":    manager.networkManager.IP(),
-							"link":  manager.networkManager.Link(),
-						}).Error("Could not check ip")
-					}
-
-					if result == false {
-						log.Error("Lost IP")
-						networkManager.AddIP()
-					}
+				if raftServer.State() == raft.RaftState(uint32(2)) {
+					manager.leaderCheck()
 				} else {
-					curLeaderIP := manager.LeaderAddr(raftServer)
-					if curLeaderIP != "" && leaderIP != curLeaderIP {
-						log.WithField("Leader Address", curLeaderIP).Info("Network Current Leader IP")
-						leaderIP = curLeaderIP
-					}
+					manager.followerAction(raftServer)
 				}
 			case <-manager.stop:
 				log.Info("Stopping")
@@ -150,40 +131,50 @@ func (manager *Manager) networkStart(raftServer *raft.Raft) {
 	}()
 }
 
-func (manager *Manager) ntpStart(raftServer *raft.Raft) {
-	var leaderIP string
-	ticker := time.NewTicker(time.Second)
-	isLeader := false
+func (manager *Manager) leaderAction() {
+	networkManager := manager.networkManager
 	ntpManager := manager.ntpManager
-
 	go func() {
-		for {
-			select {
-			case leader := <-raftServer.LeaderCh():
-				if leader {
-					isLeader = true
-					log.Info("NTP leading")
-					ntpManager.RenderLeader()
-					ntpManager.RestartService()
-				}
-			case <-ticker.C:
-				if !isLeader {
-					curLeaderIP := manager.LeaderAddr(raftServer)
-					if curLeaderIP != "" && leaderIP != curLeaderIP {
-						log.WithField("Leader Address", curLeaderIP).Info("NTP current Leader IP")
-						leaderIP = curLeaderIP
-						ip, err := SplitIP(curLeaderIP)
-						if err != nil {
-							log.Error("Leader Address is invalid")
-						}
-						ntpManager.RenderFollower(ip)
-						ntpManager.RestartService()
-					}
-
-				}
-			}
+		networkManager.AddIP()
+		if err := networkManager.SendARP(); err != nil {
+			log.Error(err)
 		}
 	}()
+
+	go func() {
+		ntpManager.RenderLeader()
+		ntpManager.RestartService()
+	}()
+}
+
+func (manager *Manager) followerAction(raftServer *raft.Raft) {
+	curLeaderIP := manager.LeaderAddr(raftServer)
+	if curLeaderIP != "" && leaderIP != curLeaderIP {
+		log.WithField("Leader Address", curLeaderIP).Info("NTP current Leader IP")
+		leaderIP = curLeaderIP
+		ip, err := SplitIP(curLeaderIP)
+		if err != nil {
+			log.Error("Leader Address is invalid")
+		}
+		manager.ntpManager.RenderFollower(ip)
+		manager.ntpManager.RestartService()
+	}
+}
+
+func (manager *Manager) leaderCheck() {
+	result, err := manager.networkManager.IsSet()
+	if err != nil {
+		log.WithFields(logrus.Fields{
+			"error": err,
+			"ip":    manager.networkManager.IP(),
+			"link":  manager.networkManager.Link(),
+		}).Error("Could not check ip")
+	}
+
+	if result == false {
+		log.Error("Lost IP")
+		manager.networkManager.AddIP()
+	}
 }
 
 func (manager *Manager) Stop() {

@@ -1,7 +1,7 @@
 package pkg
 
 import (
-	log "github.com/sirupsen/logrus"
+	"github.com/sirupsen/logrus"
 	"os"
 	"os/signal"
 )
@@ -11,7 +11,7 @@ func Serve(cfg Config) {
 	netcfg := cfg.Network
 	networkManager, err := NewNetworkConfig(netcfg.Vip, netcfg.Interface)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Init networkManager failed")
+		log.WithFields(logrus.Fields{"error": err}).Error("Init networkManager failed")
 		os.Exit(1)
 	}
 
@@ -25,7 +25,7 @@ func Serve(cfg Config) {
 	}
 	ntpManager, err := NewNTPConfig(isInternal, ntpcfg.Servers)
 	if err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Init ntpManager failed")
+		log.WithFields(logrus.Fields{"error": err}).Error("Init ntpManager failed")
 		os.Exit(1)
 	}
 
@@ -42,7 +42,7 @@ func Serve(cfg Config) {
 	logger := Logger{}
 	manager := NewManager(raftcfg.ID, raftcfg.Bind, peers, logger, networkManager, ntpManager)
 	if err := manager.Start(); err != nil {
-		log.WithFields(log.Fields{"error": err}).Error("Manager start failed")
+		log.WithFields(logrus.Fields{"error": err}).Error("Manager start failed")
 		os.Exit(1)
 	}
 

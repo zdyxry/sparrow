@@ -1,4 +1,4 @@
-# Sparrow
+# sparrow
 
 Use [Raft](https://github.com/hashicorp/raft) to complete leader election in the cluster.
 
@@ -9,8 +9,8 @@ Use [Raft](https://github.com/hashicorp/raft) to complete leader election in the
 ## Install
 
 ```shell script
-git clone git@github.com:zdyxry/Sparrow.git
-cd Sparrow
+git clone git@github.com:zdyxry/sparrow.git
+cd sparrow
 go mod download
 go build
 ```
@@ -19,7 +19,7 @@ go build
 
 Node1:
 ```shell script
-[root@install1 12:55:56 tmp]$./Sparrow serve --config ./sparrow.toml
+[root@install1 12:55:56 tmp]$./sparrow serve --config ./sparrow.toml
 Using config file: ./sparrow.toml
 INFO[0000] Create config                                
 INFO[0000] Initialize communication                     
@@ -35,7 +35,7 @@ INFO[0001] Render follower config file: %s&{172.17.17.13 false [192.168.64.1]}
 
 Node2:
 ```shell script
-[root@install2 12:55:57 tmp]$./Sparrow serve --config ./sparrow.toml 
+[root@install2 12:55:57 tmp]$./sparrow serve --config ./sparrow.toml 
 Using config file: ./sparrow.toml
 INFO[0000] Create config                                
 INFO[0000] Initialize communication                     
@@ -51,7 +51,7 @@ INFO[0001] Render follower config file: %s&{172.17.17.13 false [192.168.64.1]}
 
 Node3:
 ```shell script
-[root@install3 12:55:58 tmp]$./Sparrow serve --config ./sparrow.toml 
+[root@install3 12:55:58 tmp]$./sparrow serve --config ./sparrow.toml 
 Using config file: ./sparrow.toml
 INFO[0000] Create config                                
 INFO[0000] Initialize communication                     
@@ -69,6 +69,7 @@ INFO[0009] Add IP success                                ip=172.17.17.14 link=po
 ## Changelog
 * 2020.01.03 add NetworkManager
 * 2020.01.12 add Raft support and NTPManager
+* 2020.01.17 refactor manager and send gratuitous arp after set vip
 
 ## Todo
 * Leader election priority

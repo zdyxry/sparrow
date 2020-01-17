@@ -15,7 +15,10 @@
 # vendor/
 
 # binary
-Sparrow
+sparrow
 
 # Jetbrains
 .idea/
+
+.vscode/
+.vscode/*

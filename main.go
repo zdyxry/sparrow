@@ -1,6 +1,6 @@
 package main
 
-import "github.com/zdyxry/Sparrow/cmd"
+import "github.com/zdyxry/sparrow/cmd"
 
 func main() {
 	cmd.Execute()

@@ -8,7 +8,6 @@ import (
 	"os/exec"
 	"text/template"
 
-	log "github.com/sirupsen/logrus"
 	"github.com/pkg/errors"
 )
 
