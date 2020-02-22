@@ -72,7 +72,8 @@ INFO[0009] Add IP success                                ip=172.17.17.14 link=po
 * 2020.01.17 refactor manager and send gratuitous arp after set vip
 
 ## Todo
-* Leader election priority
+- [ ]  Leader election priority
+- [ ]  HTTP/TCP Load Balance
 
 
 ## Inspired by
